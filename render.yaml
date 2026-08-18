@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: kleoshop-emag-bridge
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 20.20.0
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: SHOPRENTER_SHOP_NAME
+        sync: false
+      - key: SHOPRENTER_CLIENT_ID
+        sync: false
+      - key: SHOPRENTER_CLIENT_SECRET
+        sync: false
+      - key: EMAG_API_BASE
+        value: https://marketplace-api.emag.hu/api-3
+      - key: EMAG_API_USERNAME
+        sync: false
+      - key: EMAG_API_PASSWORD
+        sync: false
+      - key: EMAG_WAREHOUSE_ID
+        value: "0"
+      - key: EMAG_HANDLING_TIME
+        value: "1"
+      - key: EMAG_MIN_PRICE_FACTOR
+        value: "0.8"
+      - key: EMAG_MAX_PRICE_FACTOR
+        value: "1.5"

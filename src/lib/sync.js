@@ -18,11 +18,14 @@ export async function previewOfferSync(cfg, limit = 5) {
 
   return valid.map((p) => {
     const match = byEan.get(p.gtin);
-    const canAttach = Boolean(match?.allow_to_add_offer) && !Boolean(match?.vendor_has_offer);
     const alreadyHasOffer = Boolean(match?.vendor_has_offer);
+    const canAttach = Boolean(match?.allow_to_add_offer) && !alreadyHasOffer;
     const status = p.active && p.stock > 0 ? 1 : 0;
     const salePrice = Number(p.netPrice.toFixed(4));
-    const offer = match && (canAttach || alreadyHasOffer) ? {
+
+    // Biztonsági szabály: meglévő eMAG ajánlatot nem írunk felül addig,
+    // amíg annak eredeti seller-side azonosítója nincs explicit párosítva.
+    const offer = match && canAttach ? {
       id: p.innerId,
       ...(match.part_number_key ? { part_number_key: match.part_number_key } : {}),
       status,
@@ -42,9 +45,15 @@ export async function previewOfferSync(cfg, limit = 5) {
         product_name: match.product_name || null,
         category_name: match.category_name || null,
         allow_to_add_offer: Boolean(match.allow_to_add_offer),
-        vendor_has_offer: Boolean(match.vendor_has_offer)
+        vendor_has_offer: alreadyHasOffer
       } : null,
-      action: !match ? 'NO_EMAG_MATCH' : alreadyHasOffer ? 'UPDATE_OR_ATTACH_CHECK' : canAttach ? 'ATTACH_OFFER' : 'BLOCKED',
+      action: !match
+        ? 'NO_EMAG_MATCH'
+        : alreadyHasOffer
+          ? 'ALREADY_HAS_OFFER_NEEDS_MAPPING'
+          : canAttach
+            ? 'ATTACH_OFFER'
+            : 'BLOCKED',
       offer
     };
   });
@@ -52,8 +61,8 @@ export async function previewOfferSync(cfg, limit = 5) {
 
 export async function executeOfferSync(cfg, limit = 5) {
   const preview = await previewOfferSync(cfg, limit);
-  const candidates = preview.filter((x) => x.offer && x.action !== 'BLOCKED').map((x) => x.offer);
-  if (!candidates.length) return { preview, result: { isError: false, messages: ['Nincs szinkronizálható termék.'], results: [] } };
+  const candidates = preview.filter((x) => x.action === 'ATTACH_OFFER' && x.offer).map((x) => x.offer);
+  if (!candidates.length) return { preview, result: { isError: false, messages: ['Nincs biztonságosan szinkronizálható új ajánlat.'], results: [] } };
   const result = await saveOffers(cfg.emag, candidates);
   return { preview, result };
 }

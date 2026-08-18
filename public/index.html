@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kleoshop ↔ eMAG Bridge</title>
+  <style>
+    :root{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color:#162018;background:#f4f7f4}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1180px;margin:0 auto;padding:28px}.hero{background:#fff;border:1px solid #dfe7df;border-radius:18px;padding:24px;box-shadow:0 10px 30px #1c3b2020}.hero h1{margin:0 0 8px;font-size:30px}.muted{color:#617064}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:16px}.card{background:#fff;border:1px solid #dfe7df;border-radius:14px;padding:16px}.status{display:inline-flex;align-items:center;gap:7px;font-weight:700}.dot{width:10px;height:10px;border-radius:50%;background:#9aa69b}.ok .dot{background:#2a9d4b}.bad .dot{background:#d64545}button{border:0;border-radius:10px;padding:11px 14px;font-weight:700;cursor:pointer;background:#16813b;color:#fff;margin:5px 5px 5px 0}button.secondary{background:#26342a}button.warn{background:#b26a00}input{width:100%;padding:11px;border:1px solid #cfd8d0;border-radius:9px;margin:6px 0 12px}pre{white-space:pre-wrap;word-break:break-word;background:#111a13;color:#d7f7df;padding:16px;border-radius:12px;min-height:180px;max-height:520px;overflow:auto}.small{font-size:13px}.notice{margin-top:16px;padding:14px;border-radius:12px;background:#fff7df;border:1px solid #f0d486}.buttons{margin-top:10px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>Kleoshop ↔ eMAG Bridge</h1>
+    <div class="muted">Közvetlen Shoprenter–eMAG API kapcsolat, külső havi integrációs alkalmazás nélkül.</div>
+    <div class="notice small"><b>Biztonságos próbaüzem:</b> az éles termékszinkron egyszerre legfeljebb 5 terméket küld, és külön megerősítést kér.</div>
+  </section>
+  <div class="grid">
+    <section class="card">
+      <h3>Admin hozzáférés</h3>
+      <label>ADMIN_TOKEN</label>
+      <input id="token" type="password" placeholder="Renderben megadott admin token" />
+      <button class="secondary" onclick="saveToken()">Token mentése böngészőben</button>
+    </section>
+    <section class="card"><h3>Shoprenter</h3><div id="srStatus" class="status"><span class="dot"></span>ellenőrzés...</div><div class="buttons"><button onclick="callApi('/api/test/shoprenter',{method:'POST'})">Kapcsolat teszt</button><button class="secondary" onclick="callApi('/api/products/shoprenter?limit=10')">10 termék</button></div></section>
+    <section class="card"><h3>eMAG Marketplace HU</h3><div id="emagStatus" class="status"><span class="dot"></span>ellenőrzés...</div><div class="buttons"><button onclick="callApi('/api/test/emag',{method:'POST'})">Kapcsolat teszt</button><button class="secondary" onclick="callApi('/api/offers/emag?limit=10')">10 ajánlat</button><button class="secondary" onclick="callApi('/api/orders/emag?limit=10')">10 rendelés</button></div></section>
+    <section class="card"><h3>Szinkron</h3><p class="small muted">EAN alapján megkeresi az eMAG katalógusban a Shoprenter-termékeket, majd előkészíti az ajánlatot.</p><button onclick="callApi('/api/sync/preview?limit=5')">5 termék előnézet</button><button class="warn" onclick="syncFive()">5 termék próbaszinkron</button></section>
+  </div>
+  <section class="card" style="margin-top:16px"><h3>Eredmény</h3><pre id="out">Betöltés...</pre></section>
+</div>
+<script>
+const out=document.getElementById('out');const token=document.getElementById('token');token.value=sessionStorage.getItem('bridgeToken')||'';
+function saveToken(){sessionStorage.setItem('bridgeToken',token.value);out.textContent='Admin token elmentve ebben a böngészőfülben.'}
+async function api(path,opts={}){const headers={...(opts.headers||{})};if(token.value)headers['x-admin-token']=token.value;if(opts.body)headers['content-type']='application/json';const r=await fetch(path,{...opts,headers});const t=await r.text();let data;try{data=JSON.parse(t)}catch{data=t}if(!r.ok)throw new Error(typeof data==='string'?data:JSON.stringify(data,null,2));return data}
+async function callApi(path,opts={}){out.textContent='Folyamatban...';try{const d=await api(path,opts);out.textContent=JSON.stringify(d,null,2);return d}catch(e){out.textContent='HIBA\n'+e.message}}
+async function loadStatus(){try{const s=await api('/api/status');const a=document.getElementById('srStatus');a.classList.add(s.shoprenter.configured?'ok':'bad');a.innerHTML='<span class="dot"></span>'+(s.shoprenter.configured?'Beállítva ('+s.shoprenter.authMode+')':'Nincs API hitelesítés');const b=document.getElementById('emagStatus');b.classList.add(s.emag.configured?'ok':'bad');b.innerHTML='<span class="dot"></span>'+(s.emag.configured?'Beállítva':'Nincs API hitelesítés');out.textContent=JSON.stringify(s,null,2)}catch(e){out.textContent='A státuszhoz adja meg az ADMIN_TOKEN értékét, majd töltse újra az oldalt.\n'+e.message}}
+async function syncFive(){if(!confirm('Valóban elküldjem legfeljebb 5 Shoprenter termék ajánlatadatait az eMAG-nak?'))return;await callApi('/api/sync/offers',{method:'POST',body:JSON.stringify({limit:5,confirm:'SYNC5'})})}
+loadStatus();
+</script>
+</body>
+</html>

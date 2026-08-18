@@ -14,9 +14,9 @@ services:
         generateValue: true
       - key: SHOPRENTER_SHOP_NAME
         sync: false
-      - key: SHOPRENTER_CLIENT_ID
+      - key: SHOPRENTER_API_USERNAME
         sync: false
-      - key: SHOPRENTER_CLIENT_SECRET
+      - key: SHOPRENTER_API_PASSWORD
         sync: false
       - key: EMAG_API_BASE
         value: https://marketplace-api.emag.hu/api-3

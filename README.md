@@ -6,7 +6,7 @@
 
 ## Mire képes az első stabil verzió?
 
-- Shoprenter API kapcsolat tesztelése (OAuth2 Client Credentials; opcionális legacy Basic Auth)
+- Shoprenter API kapcsolat tesztelése (legacy Basic Auth; a kód OAuth2 Client Credentials módot is támogat)
 - Shoprenter termékek lekérése
 - eMAG HU API kapcsolat tesztelése
 - eMAG ajánlatok és rendelések lekérése
@@ -18,23 +18,28 @@
 - eMAG order/cancel/return callback végpontok
 - admin felület `/` alatt, `ADMIN_TOKEN` védelemmel
 
-## Fontos
+## Shoprenter hitelesítés
 
-A normál Shoprenter admin- és eMAG webes belépési jelszavakat **nem** szabad a kódba tenni. Shoprenter oldalon API kliens (`client_id`, `client_secret`), eMAG oldalon API jogosultságú felhasználó szükséges.
+A Render Blueprint jelenleg a legacy Shoprenter API hitelesítést kéri:
 
-Az eMAG API IP-szűrést alkalmazhat az API-hozzáférésnél. Az eMAG fiók technikai beállításainál engedélyezni kell annak a Render szolgáltatásnak a kimenő IP-jét/IP-tartományát, ahonnan az API-hívások érkeznek.
+- `SHOPRENTER_SHOP_NAME`
+- `SHOPRENTER_API_USERNAME`
+- `SHOPRENTER_API_PASSWORD`
+
+A titkos értékeket kizárólag Render környezeti változóként add meg; ne commitold őket a GitHub repóba.
+
+## eMAG hitelesítés
+
+Kötelező környezeti változók:
+
+- `EMAG_API_USERNAME`
+- `EMAG_API_PASSWORD`
+
+Az eMAG API IP-szűrést alkalmazhat. Az eMAG fiók technikai beállításainál engedélyezni kell annak a Render szolgáltatásnak a kimenő IP-jét/IP-tartományát, ahonnan az API-hívások érkeznek.
 
 ## Render
 
 A repo tartalmaz `render.yaml` Blueprintet. A szolgáltatás neve: `kleoshop-emag-bridge`.
-
-Kötelező környezeti változók:
-
-- `SHOPRENTER_SHOP_NAME`
-- `SHOPRENTER_CLIENT_ID`
-- `SHOPRENTER_CLIENT_SECRET`
-- `EMAG_API_USERNAME`
-- `EMAG_API_PASSWORD`
 
 A Blueprint automatikusan generál `ADMIN_TOKEN` értéket.
 
